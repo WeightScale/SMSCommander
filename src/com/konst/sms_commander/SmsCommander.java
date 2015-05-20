@@ -6,37 +6,38 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 
 /**
- * Created by Kostya on 20.05.2015.
+ *  Класс обработки смс пакетов.
+ *  @author Kostya
  */
 public class SmsCommander {
     OnSmsCommandListener onSmsCommandListener;
 
-    /** Слушатель есть смс комманды.
-     * @param listener
+    /** Слушатель если есть смс пакет комманд.
+     *  @param listener Слушатель.
      */
     public void setOnSmsCommandListener(OnSmsCommandListener listener) {
         onSmsCommandListener = listener;
     }
 
-    /** Проверяем является коммандой.
-     * Если команда запускаем процесс парсинга пакета комманд.
-     * @param codeword Ключ для декодирования сообщения.
-     * @param objects PDUs сообщение.
-     * @return true - это комманда.
+    /** Проверяем является ли object пакетом команд.
+     *  Декодируем object, определяем если команда, запускаем процесс парсинга пакета комманд.
+     *  @param codeword Ключ для декодирования сообщения.
+     *  @param objects PDUs сообщения.
+     *  @return true - это комманда.
      */
     public boolean isCommand(String codeword, Object[] objects){
         if (objects != null){
             StringBuilder bodyText = new StringBuilder();
             String address = "";
-            for (int i = 0; i < objects.length; i++) {
-                SmsMessage message = SmsMessage.createFromPdu((byte[]) objects[i]);
+            for (Object object : objects) {
+                SmsMessage message = SmsMessage.createFromPdu((byte[]) object);
                 address = message.getDisplayOriginatingAddress();
                 bodyText.append(message.getMessageBody());
             }
             try {
                 String textSent = SMS.decrypt(codeword, bodyText.toString());
                 String date = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
-                new Thread(new ParsingSmsCommand(address, textSent,date)).start();
+                new Thread(new ParsingSmsCommand(address, textSent, date)).start();
             } catch (Exception e) {
                 return false;
             }
@@ -45,28 +46,54 @@ public class SmsCommander {
     }
 
     /** Парсер пакета комманд.
-     * Формат пакета [ [address] space [ [комманда 1] space [комманда 2] space [комманда n] ] ]
-     * Формат комманды [ [имя комманды]=[параметр] ]
-     * Формат параметра [ [[значение 1]-[параметр 2]]_[[значение 2]-[параметр 2]]_[[значение n]-[параметр n]] ]
+     *  Формат пакета [ [address] space [ [комманда 1] space [комманда 2] space [комманда n] ] ]
+     *  Формат комманды [ [имя комманды]=[параметр] ]
+     *  Формат параметра [ [[значение 1]-[параметр 2]]_[[значение 2]-[параметр 2]]_[[значение n]-[параметр n]] ]
      */
-    class ParsingSmsCommand implements Runnable {
-        final String mAddress;
-        final StringBuilder mText;
+    static class ParsingSmsCommand implements Runnable {
+        String mAddress;
+        final StringBuilder mPackage;
         final String date;
 
         /** Конструктор парсера.
-         * @param address Адресс отправителя.
-         * @param msg Пакет комманд.
-         * @param date Дата получения пакета. */
-        ParsingSmsCommand(String address, String msg, String date) {
+         *  @param address Адресс отправителя.
+         *  @param _package Пакет комманд.
+         *  @param date Дата получения пакета. */
+        ParsingSmsCommand(String address, String _package, String date) {
             mAddress = address;
-            mText = new StringBuilder(msg);
+            mPackage = new StringBuilder(_package);
             this.date = date;
         }
 
         @Override
         public void run() {
-
+            if (mAddress == null)
+                return;
+            if (mPackage.indexOf(" ") != -1) {
+                String packageAddress = mPackage.substring(0, mPackage.indexOf(" "));
+                if (!packageAddress.isEmpty()) {
+                    if (packageAddress.length() > mAddress.length()) {
+                        packageAddress = packageAddress.substring(packageAddress.length() - mAddress.length(), packageAddress.length());
+                    } else if (packageAddress.length() < mAddress.length()) {
+                        mAddress = mAddress.substring(mAddress.length() - packageAddress.length(), mAddress.length());
+                    }
+                    if (mAddress.equals(packageAddress)) {
+                        mPackage.delete(0, mPackage.indexOf(" ") + 1);
+                        StringBuilder textSent = new StringBuilder();
+                        try {
+                            //SmsCommand command = new SmsCommand(getApplicationContext(), mPackage.toString());
+                            //textSent = command.commandsExt();
+                        } catch (Exception e) {
+                            textSent.append(e.getMessage());
+                        }
+                        try {
+                            //SMS.sendSMS(address, textSent.toString());
+                        } catch (Exception e) {
+                            e.printStackTrace();
+                        }
+                    }
+                }
+            }
         }
 
     }

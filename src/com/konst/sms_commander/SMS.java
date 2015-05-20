@@ -34,8 +34,9 @@ import java.util.Map;
         12          :     service_center
         13          :     locked*/
 
-/*
+/**
  * Created by Kostya on 29.03.2015.
+ * @author Kostya
  */
 class SMS {
     final Context mContext;
@@ -62,6 +63,9 @@ class SMS {
         mContext = context;
     }
 
+    /** Получить все смс сообщения.
+     * @return Лист смс сообщений.
+     */
     public List<SmsObject> getAllSms() {
         Uri message = Uri.parse("content://sms/");
         ContentResolver contentResolver = mContext.getContentResolver();
@@ -90,6 +94,9 @@ class SMS {
         return list;
     }
 
+    /** Получить входящии смс сообщения.
+     * @return Лист смс сообщений.
+     */
     public synchronized List<SmsObject> getInboxSms() {
         Uri message = Uri.parse("content://sms/inbox");
         ContentResolver contentResolver = mContext.getContentResolver();
@@ -118,7 +125,11 @@ class SMS {
         return list;
     }
 
-    public List<SmsObject> getInboxSms(String name) {
+    /** Получить входящии смс сообщения с фильтром по address.
+     * @param address Номер телефона (address) для отбора.
+     * @return Лист смс сообщений.
+     */
+    public List<SmsObject> getInboxSms(String address) {
         Uri message = Uri.parse("content://sms/inbox");
         ContentResolver contentResolver = mContext.getContentResolver();
 
@@ -128,7 +139,7 @@ class SMS {
         List<SmsObject> list = new ArrayList<>();
 
         for (Map.Entry<String, ContentValues> entry : map.entrySet()) {
-            if (name.equals(entry.getValue().get(ADDRESS))) {
+            if (address.equals(entry.getValue().get(ADDRESS))) {
                 SmsObject smsObject = new SmsObject();
                 smsObject.setId(entry.getKey());
                 smsObject.setMsg(entry.getValue().getAsString(BODY));
@@ -142,11 +153,18 @@ class SMS {
         return list;
     }
 
+    /** Удалить смс сообщение.
+     * @param smsId Индекс сообщения для удаления.
+     * @return Номер индекса удаленного сообщения.
+     */
     public synchronized int delete(int smsId) {
         final Uri smsUri = ContentUris.withAppendedId(Uri.parse("content://sms/"), smsId);
         return mContext.getContentResolver().delete(smsUri, null, null);
     }
 
+    /** Получить отправленые смс сообщения.
+     * @return Список смс в масиве MAP.
+     */
     public Map<String, ContentValues> getSentSms() {
         Uri message = Uri.parse("content://sms/sent");
         ContentResolver contentResolver = mContext.getContentResolver();
@@ -159,6 +177,9 @@ class SMS {
         return map;
     }
 
+    /** Получить смс сохраненые в черновике.
+     * @return Список смс в масиве MAP.
+     */
     public Map<String, ContentValues> getDraftSms() {
         Uri message = Uri.parse("content://sms/draft");
         ContentResolver contentResolver = mContext.getContentResolver();
@@ -171,7 +192,12 @@ class SMS {
         return map;
     }
 
-    // Encrypts string and encodes in Base64
+    /** Кодер текстовых данных Base64.
+     * @param password Ключь для кодирования.
+     * @param data данные для кодировния.
+     * @return Закодированые данные.
+     * @throws Exception Ошибка кодирования.
+     */
     public static String encrypt(String password, String data) throws Exception {
         byte[] secretKey = generateKey(password.getBytes());
         byte[] clear = data.getBytes();
@@ -185,7 +211,12 @@ class SMS {
         return Base64.encodeToString(encrypted, Base64.DEFAULT);
     }
 
-    // Decrypts string encoded in Base64
+    /** Декрдер текстовых данных Base64.
+     * @param password Ключь для декодирования в текстовом виде.
+     * @param encryptedData Кодированые данные.
+     * @return Декодированые данные.
+     * @throws Exception Это не закодированые данные.
+     */
     public static String decrypt(String password, String encryptedData) throws Exception {
         byte[] secretKey = generateKey(password.getBytes());
         Key secretKeySpec = new SecretKeySpec(secretKey, CIPHER_ALGORITHM);
@@ -198,6 +229,11 @@ class SMS {
         return new String(decrypted);
     }
 
+    /** Генератор ключа.
+     * @param seed Ключь в байтах.
+     * @return Сгенерированый секретный ключ.
+     * @throws Exception Ошибка генерации ключа.
+     */
     public static byte[] generateKey(byte... seed) throws Exception {
         KeyGenerator keyGenerator = KeyGenerator.getInstance(CIPHER_ALGORITHM);
         SecureRandom secureRandom = SecureRandom.getInstance(RANDOM_GENERATOR_ALGORITHM);
@@ -207,7 +243,11 @@ class SMS {
         return secretKey.getEncoded();
     }
 
-    //==================================================================================================================
+    /** Послать смс сообщение.
+     * @param phoneNumber Номер телефона адресата.
+     * @param message Сооющение.
+     * @throws Exception Ошибеа отправки сообщения.
+     */
     public static void sendSMS(String phoneNumber, String message) throws Exception {
         SmsManager sms = SmsManager.getDefault();
         ArrayList<String> parts = sms.divideMessage(message);
