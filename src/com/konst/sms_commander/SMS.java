@@ -38,7 +38,7 @@ import java.util.Map;
  * Created by Kostya on 29.03.2015.
  * @author Kostya
  */
-class SMS {
+public class SMS {
     final Context mContext;
     private static final String CIPHER_ALGORITHM = "AES";
     private static final String RANDOM_GENERATOR_ALGORITHM = "SHA1PRNG";

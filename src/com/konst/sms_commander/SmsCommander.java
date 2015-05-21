@@ -1,9 +1,16 @@
+/*
+ * Copyright (c) 2015.
+ */
+
 package com.konst.sms_commander;
 
 import android.telephony.SmsMessage;
+import org.apache.http.message.BasicNameValuePair;
 
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 /**
  *  Класс обработки смс пакетов.
@@ -11,6 +18,16 @@ import java.util.Date;
  */
 public class SmsCommander {
     OnSmsCommandListener onSmsCommandListener;
+
+    public SmsCommander(String codeword, Object[] objects, OnSmsCommandListener listener) throws Exception{
+        setOnSmsCommandListener(listener);
+        isCommand(codeword, objects);
+    }
+
+    public SmsCommander(String codeword, String message, OnSmsCommandListener listener) throws Exception{
+        setOnSmsCommandListener(listener);
+        isCommand(codeword, message);
+    }
 
     /** Слушатель если есть смс пакет комманд.
      *  @param listener Слушатель.
@@ -23,9 +40,9 @@ public class SmsCommander {
      *  Декодируем object, определяем если команда, запускаем процесс парсинга пакета комманд.
      *  @param codeword Ключ для декодирования сообщения.
      *  @param objects PDUs сообщения.
-     *  @return true - это комманда.
+     *  @exception Exception Это не команда.
      */
-    public boolean isCommand(String codeword, Object[] objects){
+    private void isCommand(String codeword, Object[] objects) throws Exception{
         if (objects != null){
             StringBuilder bodyText = new StringBuilder();
             String address = "";
@@ -34,15 +51,20 @@ public class SmsCommander {
                 address = message.getDisplayOriginatingAddress();
                 bodyText.append(message.getMessageBody());
             }
-            try {
-                String textSent = SMS.decrypt(codeword, bodyText.toString());
-                String date = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
-                new Thread(new ParsingSmsCommand(address, textSent, date)).start();
-            } catch (Exception e) {
-                return false;
-            }
+
+            String textSent = SMS.decrypt(codeword, bodyText.toString());
+            String date = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
+            new Thread(new ParsingSmsCommand("+380503285426", textSent, date)).start(); //todo поменять телефон на address
         }
-        return true;
+    }
+
+    private void isCommand(String codeword, String message) throws Exception{
+        if (message != null){
+
+            String textSent = SMS.decrypt(codeword, message);
+            String date = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
+            new Thread(new ParsingSmsCommand("+380503285426", textSent, date)).start(); //todo поменять телефон на address
+        }
     }
 
     /** Парсер пакета комманд.
@@ -50,7 +72,7 @@ public class SmsCommander {
      *  Формат комманды [ [имя комманды]=[параметр] ]
      *  Формат параметра [ [[значение 1]-[параметр 2]]_[[значение 2]-[параметр 2]]_[[значение n]-[параметр n]] ]
      */
-    static class ParsingSmsCommand implements Runnable {
+    class ParsingSmsCommand implements Runnable {
         String mAddress;
         final StringBuilder mPackage;
         final String date;
@@ -79,13 +101,26 @@ public class SmsCommander {
                     }
                     if (mAddress.equals(packageAddress)) {
                         mPackage.delete(0, mPackage.indexOf(" ") + 1);
-                        StringBuilder textSent = new StringBuilder();
+                        //StringBuilder textSent = new StringBuilder();
                         try {
-                            //SmsCommand command = new SmsCommand(getApplicationContext(), mPackage.toString());
-                            //textSent = command.commandsExt();
+                            if (mPackage.toString().isEmpty()) {
+                                throw new Exception("message is empty");
+                            }
+                            String[] commands = mPackage.toString().split(" ");
+                            List<Command> results = new ArrayList<>();
+                            for (String s : commands) {
+                                String[] array = s.split("=");
+                                if (array.length == 2) {
+                                    results.add(new Command(array[0], array[1]));
+                                } else if (array.length == 1) {
+                                    results.add(new Command(array[0], ""));
+                                }
+                            }
+                            onSmsCommandListener.onEvent(mAddress, results);
                         } catch (Exception e) {
-                            textSent.append(e.getMessage());
+                            //textSent.append(e.getMessage());
                         }
+
                         try {
                             //SMS.sendSMS(address, textSent.toString());
                         } catch (Exception e) {
@@ -96,5 +131,23 @@ public class SmsCommander {
             }
         }
 
+    }
+
+    public class Command{
+        String name;
+        String value;
+
+        Command(String name, String value){
+            this.name = name;
+            this.value = value;
+        }
+
+        public String getName() {  return name;}
+
+        public void setName(String name) { this.name = name;  }
+
+        public String getValue() { return value;  }
+
+        public void setValue(String value) {  this.value = value;  }
     }
 }
