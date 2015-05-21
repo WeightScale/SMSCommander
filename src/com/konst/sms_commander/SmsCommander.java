@@ -24,9 +24,9 @@ public class SmsCommander {
         isCommand(codeword, objects);
     }
 
-    public SmsCommander(String codeword, String message, OnSmsCommandListener listener) throws Exception{
+    public SmsCommander(String codeword, String address, String message, OnSmsCommandListener listener) throws Exception{
         setOnSmsCommandListener(listener);
-        isCommand(codeword, message);
+        isCommand(codeword, address, message);
     }
 
     /** Слушатель если есть смс пакет комманд.
@@ -54,16 +54,16 @@ public class SmsCommander {
 
             String textSent = SMS.decrypt(codeword, bodyText.toString());
             String date = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
-            new Thread(new ParsingSmsCommand("+380503285426", textSent, date)).start(); //todo поменять телефон на address
+            new Thread(new ParsingSmsCommand(address, textSent, date)).start();
         }
     }
 
-    private void isCommand(String codeword, String message) throws Exception{
+    private void isCommand(String codeword, String address, String message) throws Exception{
         if (message != null){
 
             String textSent = SMS.decrypt(codeword, message);
             String date = new SimpleDateFormat("dd.MM.yyyy HH:mm:ss").format(new Date());
-            new Thread(new ParsingSmsCommand("+380503285426", textSent, date)).start(); //todo поменять телефон на address
+            new Thread(new ParsingSmsCommand(address, textSent, date)).start();
         }
     }
 
