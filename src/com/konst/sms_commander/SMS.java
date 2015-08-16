@@ -36,6 +36,7 @@ import java.util.Map;
 
 /**
  * Created by Kostya on 29.03.2015.
+ *
  * @author Kostya
  */
 public class SMS {
@@ -63,7 +64,9 @@ public class SMS {
         mContext = context;
     }
 
-    /** Получить все смс сообщения.
+    /**
+     * Получить все смс сообщения.
+     *
      * @return Лист смс сообщений.
      */
     public List<SmsObject> getAllSms() {
@@ -94,7 +97,9 @@ public class SMS {
         return list;
     }
 
-    /** Получить входящии смс сообщения.
+    /**
+     * Получить входящии смс сообщения.
+     *
      * @return Лист смс сообщений.
      */
     public synchronized List<SmsObject> getInboxSms() {
@@ -125,7 +130,9 @@ public class SMS {
         return list;
     }
 
-    /** Получить входящии смс сообщения с фильтром по address.
+    /**
+     * Получить входящии смс сообщения с фильтром по address.
+     *
      * @param address Номер телефона (address) для отбора.
      * @return Лист смс сообщений.
      */
@@ -153,7 +160,9 @@ public class SMS {
         return list;
     }
 
-    /** Удалить смс сообщение.
+    /**
+     * Удалить смс сообщение.
+     *
      * @param smsId Индекс сообщения для удаления.
      * @return Номер индекса удаленного сообщения.
      */
@@ -162,7 +171,9 @@ public class SMS {
         return mContext.getContentResolver().delete(smsUri, null, null);
     }
 
-    /** Получить отправленые смс сообщения.
+    /**
+     * Получить отправленые смс сообщения.
+     *
      * @return Список смс в масиве MAP.
      */
     public Map<String, ContentValues> getSentSms() {
@@ -177,7 +188,9 @@ public class SMS {
         return map;
     }
 
-    /** Получить смс сохраненые в черновике.
+    /**
+     * Получить смс сохраненые в черновике.
+     *
      * @return Список смс в масиве MAP.
      */
     public Map<String, ContentValues> getDraftSms() {
@@ -192,9 +205,11 @@ public class SMS {
         return map;
     }
 
-    /** Кодер текстовых данных Base64.
+    /**
+     * Кодер текстовых данных Base64.
+     *
      * @param password Ключь для кодирования.
-     * @param data данные для кодировния.
+     * @param data     данные для кодировния.
      * @return Закодированые данные.
      * @throws Exception Ошибка кодирования.
      */
@@ -211,8 +226,10 @@ public class SMS {
         return Base64.encodeToString(encrypted, Base64.DEFAULT);
     }
 
-    /** Декрдер текстовых данных Base64.
-     * @param password Ключь для декодирования в текстовом виде.
+    /**
+     * Декодер текстовых данных Base64.
+     *
+     * @param password      Ключь для декодирования в текстовом виде.
      * @param encryptedData Кодированые данные.
      * @return Декодированые данные.
      * @throws Exception Это не закодированые данные.
@@ -229,7 +246,9 @@ public class SMS {
         return new String(decrypted);
     }
 
-    /** Генератор ключа.
+    /**
+     * Генератор ключа.
+     *
      * @param seed Ключь в байтах.
      * @return Сгенерированый секретный ключ.
      * @throws Exception Ошибка генерации ключа.
@@ -243,15 +262,33 @@ public class SMS {
         return secretKey.getEncoded();
     }
 
-    /** Послать смс сообщение.
+    /**
+     * Послать смс сообщение.
+     *
      * @param phoneNumber Номер телефона адресата.
-     * @param message Сооющение.
+     * @param message     Сооющение.
      * @throws Exception Ошибеа отправки сообщения.
      */
     public static void sendSMS(String phoneNumber, String message) throws Exception {
         SmsManager sms = SmsManager.getDefault();
         ArrayList<String> parts = sms.divideMessage(message);
         sms.sendMultipartTextMessage(phoneNumber, null, parts, null, null);
+    }
+
+    /**
+     * Переводим Hex в  массив Byte.
+     *
+     * @param hexString Строка в Hex формате.
+     * @return Массив Byte/
+     */
+    public static byte[] fromHexString(String hexString) {
+        int len = hexString.length();
+        byte[] data = new byte[len / 2];
+
+        for (int i = 0; i < len; i += 2) {
+            data[i / 2] = (byte) ((Character.digit(hexString.charAt(i), 16) << 4) + Character.digit(hexString.charAt(i + 1), 16));
+        }
+        return data;
     }
 
     public class SmsObject {
